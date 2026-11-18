@@ -1,0 +1,9 @@
+{
+  "repository": "https://github.com/obra/superpowers",
+  "revision": null,
+  "license": "MIT",
+  "references": [
+    "skills/systematic-debugging/SKILL.md"
+  ],
+  "adaptation": "Concise text adaptation used in the Bot experiments. The original upstream revision was not recorded; the experimental instruction body is preserved unchanged."
+}
