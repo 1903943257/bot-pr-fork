@@ -1,33 +1,33 @@
-# Systematic debugging：接入与实验结果
+# systematic-debugging：接入与实验结果
 
-增加最小复现、边界追踪、单一因果假设和针对性验证的文本技能，区分起点已有失败与本次回归。
+先复现故障，再沿组件边界验证根因并复测。 Skill 正文沿用实验中的简短适配版，附来源与 MIT 许可。
 
 ## 接入方式
 
-沿用仓库 `skills/roadmap-decomposition/` 的普通文本 Skill 打包方式。将本目录的 `SKILL.md` 作为控制台文件 Skill bundle 导入并绑定到 Dev；配置和固定版本机制见 [角色池](../role-pool.md)。如使用 repository 来源，文件必须先进入目标项目规则缓存支持的 `.agents/skills/<名称>/SKILL.md`，刷新规则后以明确 commit 和 paths 固定并绑定。仅把文件放入 Bot 自身的 `skills/` 目录不会自动注入运行角色。
+1. 在项目角色设置中创建控制台文件 Skill bundle，加入 `test-driven-development/SKILL.md` 和 `systematic-debugging/SKILL.md`，并绑定给 Dev。也可将文件放入目标项目的 `.agents/skills/<名称>/SKILL.md`，刷新项目规则、固定提交和路径，再绑定。见[角色配置](../role-pool.md)。
+2. 常规使用可让 Dev 按需读取。要复现实验，在 Dev 的 `persona_prompt` 末尾追加：「每次开发委派开始时，在调查或编辑前，用 `read_skill` 按路径读取绑定的 `SKILL.md` 正文并遵循其指引。」双 Skill 配置要指定两条路径；按包里实际显示的路径填写。
+3. 启动新任务，检查 Dev 的 `skill_read` 日志是否记录了相应文件。只看到文件列表表示技能可用。合入本 PR 只提供技能文件，现有 Bot 运行时代码无需修改。
 
-正文与实验使用的适配版一致；不是完整原版 Superpowers。来源和 MIT 许可随技能保留，历史实验未记录上游原版 revision，`SOURCES.json` 明确记为 null。
+## Navidrome 双 Skill 复跑（2026-11-18）
 
-## 结果来源与范围
+| 设置 | 内容 |
+| --- | ---: |
+| 任务 | SWE-Milestone v1.0.2，Navidrome `milestone_006`，五项 UI 改进 |
+| 共用基线 | Navidrome `adbd68b`；Bot `753cef62`；Native 后端；同一 `DeepSeek-V4.1-Flash-1017` API；同一验收门槛 |
+| 分组 | Base 无额外 Dev Skill；双 Skill 绑定 TDD 和系统化调试，并要求 Dev 开工先读两份正文 |
 
-以下结果转述自 2026-11-18 交付包 v2 的《Bot Skill 三组实验总结》（`00-实验总结.md`），本 PR 未重新运行模型实验。只提供汇总，不包含私仓源码、凭据或完整实验归档。
+按 Dev 各轮的实际起止时间累计开发用时。双 Skill 组前三轮各读取两份正文，首轮后续模型请求中核验到完整正文。
 
-## 双 Skill 的 SWE-Milestone 006 验证
+| 指标 | Base | 双 Skill |
+| --- | ---: | ---: |
+| 独立 QA | pass | pass |
+| 官方功能 / 回归 | 7/7 / 1063/1063 | 7/7 / 1063/1063 |
+| Dev 累计耗时 | 34 分 07 秒 | 27 分 14 秒（−20.2%） |
+| Dev 模型请求 | 98 | 94 |
+| Dev 输入 token（含缓存） | 8,709,794 | 7,647,349（−12.2%） |
+| Dev 输出 token | 155,436 | 100,992（−35.0%） |
+| 任务创建到开 PR | 1 小时 52 分 03 秒 | 2 小时 36 分 50 秒 |
 
-Navidrome `milestone_006` 使用 `deepseek-flash`，Dev 加入 TDD 和 systematic-debugging。历史 Base 与双 Skill 的源文件清单排除 Skill 文件后，路径和 blob SHA 无差异；运行时间和环境未完全同步锁定。
+**双 Skill 组功能和回归同分，Dev 少用 6 分 53 秒（20.2%），输出 token 少 35.0%。** 发布恢复延长了整轮交付。本轮只验证组合，无法分离单项贡献。 双 Skill 组在候选提名后重试了发布标签和测试依赖恢复，最终发布时未改动候选 Git 树。将两轮恢复也计入，双 Skill 所有 Dev 运行合计 30 分 39 秒、105 次请求。功能与回归是固定评分分类，评分范围不覆盖全仓测试。上一次仅绑定技能未确认读到正文，不计为有效双 Skill 对照。
 
-| 指标 | 历史 Base | 双 Skill |
-|---|---|---|
-| 开发交付 | 已开 PR，QA pass | 已开 PR，开发阶段约 29 分 28 秒 |
-| 评分结果 | infra_invalid，实际执行 0 项 | 功能 7/7、回归 1063/1063 |
-| 有效功能成绩 | 未取得 | resolved=true，计分范围内零回归失败 |
-
-双 Skill 配置完成需求→实现→PR→有效评分链路，目标功能与固定回归全部达标。Base 的停点是评分基础设施／候选应用链路无效，不是开发未交付，也不是执行功能测试后失败；不能将 0 项执行写成 0/7 或据此计算功能胜率提升。
-
-评分有 `partial_test_universe` 和 Go 插件编译问题，“通过”仅指固定分类内的功能和回归要求，不代表全仓测试全绿。该实验同时配置两项 Skill，不能单独归因于 systematic-debugging，也不足以证明稳定收益。本 PR 可独立合入；复现组合实验仍需另外配置 TDD。
-
-## 完整 Roadmap 组合实验的边界
-
-完整 Roadmap＋Bot＋DigitalMate 对比中，Base 与三 Skill 配置组均为独立 QA `pass_with_issues`、固定回归 44/44；Base 父任务至 PR 约 5 小时 1 分，Skill 组约 9 小时 56 分，本轮未观察到整体效率优势。
-
-期间模型、并发和人工恢复影响耗时。日志仅确认 Manager 读取 roadmap-decomposition，未找到 Dev 读取 TDD／systematic-debugging 的记录。配置三项不等于三项都实际生效；这些是适配版本，也不能直接代表完整原版 Superpowers。
+本实验没有单独运行 `systematic-debugging`，两份 Skill 可以各自安装。
